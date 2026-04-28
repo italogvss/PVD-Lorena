@@ -11,7 +11,7 @@ src/
 ├── contexts/
 │   ├── AuthContext.tsx       # user, login(), logout(), isAdmin
 │   └── ToastContext.tsx      # showToast(message, severity)
-├── hooks/                   # useAuth, useToast, usePagination, etc.
+├── hooks/                   # useAuth, useToast, usePagination, useProduct, useSales etc.
 ├── lib/
 │   └── axios.ts             # configured Axios instance
 ├── pages/                   # one folder per route

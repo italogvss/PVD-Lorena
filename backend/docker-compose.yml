@@ -1,0 +1,6 @@
+services:
+  pdv.api:
+    image: ${DOCKER_REGISTRY-}pdvapi
+    build:
+      context: .
+      dockerfile: PDV.Api/Dockerfile

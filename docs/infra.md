@@ -5,13 +5,13 @@
 ```
 /
 ├── backend/
-│   ├── src/
-│   │   ├── PDV.Domain/
-│   │   ├── PDV.Application/
-│   │   ├── PDV.Infrastructure/
-│   │   └── PDV.Api/
-│   ├── Dockerfile
-│   └── PDV.sln
+│   ├── PDV.Domain/
+│   ├── PDV.Application/
+│   ├── PDV.Infrastructure/
+│   ├── PDV.Api/
+│   │   └── Dockerfile
+│   ├── .dockerignore
+│   └── backend.slnx
 ├── frontend/
 │   ├── src/
 │   ├── Dockerfile
@@ -23,7 +23,7 @@
 │   ├── frontend.md
 │   └── infra.md
 ├── docker-compose.yml
-├── docker-compose.prod.yml
+├── docker-compose.yml
 ├── .env                    # never commit — add to .gitignore
 ├── .env.example            # commit this — template with placeholder values
 └── claude.md
@@ -82,8 +82,8 @@ Frontend and API are served under the **same domain** in production via nginx re
 
 ```env
 # Database
-DB_CONNECTION_STRING=Server=db;Port=3306;Database=pdv;User=root;Password=your_password_here
-DB_ROOT_PASSWORD=your_root_password_here
+DB_CONNECTION_STRING=Server=db;Port=3306;Database=pdv;User=root;Password=admin
+DB_ROOT_PASSWORD=admin
 DB_NAME=pdv
 
 # JWT
@@ -154,7 +154,7 @@ The MySQL MCP server is configured in `.claude/mcp_settings.json` to allow Claud
         "MYSQL_HOST": "127.0.0.1",
         "MYSQL_PORT": "3306",
         "MYSQL_USER": "root",
-        "MYSQL_PASS": "your_password_here",
+        "MYSQL_PASS": "admin",
         "MYSQL_DB": "pdv"
       }
     }

@@ -3,7 +3,7 @@
 ## Clean Architecture — Layer Structure
 
 ```
-src/
+backend/
 ├── PDV.Domain/          # Entities, enums, repository interfaces, pure business rules
 ├── PDV.Application/     # Use cases, DTOs, FluentValidation validators, service interfaces
 ├── PDV.Infrastructure/  # EF Core DbContext, repository implementations, external services

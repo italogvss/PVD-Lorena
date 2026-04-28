@@ -14,6 +14,11 @@ Before any task, identify the context and read the relevant doc:
 | Frontend, React components, routing, MUI theme      | `docs/frontend.md`    |
 | Docker, environment variables, deploy, CORS         | `docs/infra.md`       |
 
+Each sub-project also has its own `claude.md` with setup and run instructions:
+
+- Backend commands, migrations, project structure → `backend/claude.md`
+- Frontend commands, Vite config, project structure → `frontend/claude.md`
+
 ---
 
 ## Skills — Read Before Coding
@@ -27,6 +32,7 @@ Before writing any code, identify the task type and read the corresponding skill
 | Create a reusable React component                | `.claude/skills/mui-component.md` |
 | Create a frontend page (route)                   | `.claude/skills/new-page.md`      |
 | Create a frontend service file (`*Service.ts`)   | `.claude/skills/service-layer.md` |
+| Use this skill whenever a new service file is created or referenced, and a domain hook needs to be created or updated in `src/hooks/`.   | `.claude/skills/hook-layer.md` |
 
 ---
 
@@ -73,6 +79,8 @@ Before writing any code, identify the task type and read the corresponding skill
   - Examples: `feat(products): add stock adjustment endpoint`
   - Types: `feat` | `fix` | `refactor` | `chore` | `docs`
 - Never commit `.env` files or secrets.
+- Create a branch for new features: `feature/feature-name`.
+- Create a branch for fixes: `fix/fix-name`.
 
 ---
 
@@ -82,6 +90,7 @@ Before writing any code, identify the task type and read the corresponding skill
 - After running a migration, confirm the table/column was created correctly.
 - Never run destructive queries (`DROP`, `DELETE` without `WHERE`) without explicit confirmation.
 - The MCP connects to the **development** database only — never production credentials here.
+- MCP config lives in `.claude/mcp_settings.json` — this file is in `.gitignore` and must never be committed.
 
 ---
 
