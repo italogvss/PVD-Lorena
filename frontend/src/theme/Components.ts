@@ -7,7 +7,7 @@ export const components: Components<Theme> = {
         width: "100%",
         borderRadius: 10,
         padding: 0,
-        '& .MuiOutlinedInput-root': {
+        '& .MuiOutlinedInput-root': {          
           borderRadius: 8,
           margin: 0,
           padding: 0

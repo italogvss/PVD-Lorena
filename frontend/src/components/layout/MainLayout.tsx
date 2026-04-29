@@ -91,7 +91,7 @@ const MainLayout: FC = () => {
       <Divider />
 
       {/* Nav items */}
-      <List sx={{ flexGrow: 1, px: 1.5, py: 1.5, display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+      <List sx={{ px: 1.5, py: 1.5, display: 'flex', flexDirection: 'column', gap: 1 }}>
         {navItems.map((item) => {
           const selected = isSelected(item.path);
           return (
@@ -122,7 +122,7 @@ const MainLayout: FC = () => {
       </List>
 
       {/* Logout */}
-      <Divider />
+      <Divider sx={{ mt: 'auto' }} />
       <List sx={{ px: 1.5, py: 1 }}>
         <ListItemButton
           onClick={logout}
