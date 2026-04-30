@@ -52,6 +52,15 @@ export function useProduct() {
     }
   };
 
+  const removeMany = async (ids: string[]) => {
+    setLoading('remove');
+    try {
+      await Promise.all(ids.map(id => productService.remove(id)));
+    } finally {
+      setLoading(null);
+    }
+  };
+
   const adjustStock = async (id: string, quantity: number) => {
     setLoading('adjustStock');
     try {
@@ -61,5 +70,5 @@ export function useProduct() {
     }
   };
 
-  return { loading, getAll, getById, create, update, remove, adjustStock };
+  return { loading, getAll, getById, create, update, remove, removeMany, adjustStock };
 }

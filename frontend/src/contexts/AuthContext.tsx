@@ -10,6 +10,7 @@ interface AuthContextType {
   isLoading: boolean;
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const AuthContext = createContext<AuthContextType | null>(null);
 
 export const AuthProvider: FC<{ children: ReactNode }> = ({ children }) => {
@@ -21,10 +22,11 @@ export const AuthProvider: FC<{ children: ReactNode }> = ({ children }) => {
       .then(setUser)
       .catch(() => setUser(null))
       .finally(() => setIsLoading(false));
+      console.log(user)
   }, []);
 
-  const login = async (email: string, password: string) => {
-    await authService.login({ email, password });
+  const login = async (username: string, password: string) => {
+    await authService.login({ username, password });
     const me = await authService.me();
     setUser(me);
   };

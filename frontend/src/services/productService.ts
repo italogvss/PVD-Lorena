@@ -6,6 +6,8 @@ export interface GetProductsParams {
   pageSize: number;
   name?: string;
   barcode?: string;
+  sortBy?: string;
+  sortOrder?: 'asc' | 'desc';
 }
 
 const productService = {

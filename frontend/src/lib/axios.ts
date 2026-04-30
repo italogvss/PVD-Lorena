@@ -8,7 +8,9 @@ const api = axios.create({
 api.interceptors.response.use(
   response => response,
   error => {
-    if (error.response?.status === 401) {
+    // Only redirect on 401 when outside the login page to avoid an infinite
+    // reload loop caused by the initial session check (GET /api/auth/me).
+    if (error.response?.status === 401 && window.location.pathname !== '/login') {
       window.location.href = '/login';
     }
     return Promise.reject(error);

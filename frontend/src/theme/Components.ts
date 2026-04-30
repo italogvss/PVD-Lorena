@@ -198,13 +198,11 @@ export const components: Components<Theme> = {
         minHeight: 'auto',
         alignItems: 'center',
         display: 'flex',
+        '& .MuiTabs-flexContainer': { gap: '4px' },
       },
       indicator: {
         display: 'none',
       },
-      flexContainer: ({ theme }) => ({
-        gap: theme.spacing(0.5),
-      }),
     },
   },
   MuiTab: {

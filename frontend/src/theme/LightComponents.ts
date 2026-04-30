@@ -77,15 +77,17 @@ export const lightComponents: Components<Theme> = {
   MuiSelect: {
     defaultProps: {
       MenuProps: {
-        PaperProps: {
-          sx: {
-            backgroundColor: 'background.paper',
-            marginTop: 1,
+        slotProps: {
+          paper: {
+            sx: {
+              backgroundColor: 'background.paper',
+              marginTop: 1,
+            },
           },
-        },
-        MenuListProps: {
-          sx: {
-            padding: '8px',
+          list: {
+            sx: {
+              padding: '8px',
+            },
           },
         },
       },
@@ -205,13 +207,11 @@ export const lightComponents: Components<Theme> = {
         minHeight: 'auto',
         alignItems: 'center',
         display: 'flex',
+        '& .MuiTabs-flexContainer': { gap: '4px' },
       },
       indicator: {
         display: 'none',
       },
-      flexContainer: ({ theme }) => ({
-        gap: theme.spacing(0.5),
-      }),
     },
   },
   MuiTab: {

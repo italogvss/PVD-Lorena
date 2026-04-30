@@ -1,7 +1,13 @@
 {
   "permissions": {
     "allow": [
-      "Bash(npx tsc *)"
+      "Bash(npx tsc *)",
+      "Bash(grep -E \"\\\\.\\(sln|cs|md|dcproj|http|yml\\)$\")",
+      "Bash(dotnet build *)",
+      "Bash(dotnet ef *)",
+      "Bash(docker-compose up *)",
+      "Bash(node -e \"console.log\\(require\\('./node_modules/@mui/material/package.json'\\).version\\)\")",
+      "Bash(xargs grep *)"
     ]
   }
 }

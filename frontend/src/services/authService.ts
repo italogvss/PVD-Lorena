@@ -2,7 +2,7 @@ import api from '../lib/axios';
 import type { AuthUser } from '../types';
 
 interface LoginRequest {
-  email: string;
+  username: string;
   password: string;
 }
 
