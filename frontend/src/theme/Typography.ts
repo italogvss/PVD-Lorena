@@ -1,7 +1,7 @@
 import { TypographyVariantsOptions } from "@mui/material/styles";
 
 export const typography: TypographyVariantsOptions = {
-  fontFamily: "var(--font-creato), sans-serif",
+  fontFamily: '"Mozilla Headline", sans-serif',
   fontSize: 14,
 
   h1: {

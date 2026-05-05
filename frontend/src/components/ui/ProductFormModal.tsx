@@ -1,4 +1,4 @@
-import { FC, forwardRef, useState } from 'react';
+import { FC, forwardRef, useEffect, useState } from 'react';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Dialog from '@mui/material/Dialog';
@@ -12,7 +12,7 @@ import type { InputBaseComponentProps } from '@mui/material/InputBase';
 import { IMaskInput } from 'react-imask';
 import { useProduct } from '../../hooks/useProduct';
 import { useToast } from '../../hooks/useToast';
-import type { CreateProductRequest } from '../../types';
+import type { CreateProductRequest, Product } from '../../types';
 
 interface CurrencyInputProps extends InputBaseComponentProps {
   onChange: (event: { target: { name: string; value: string } }) => void;
@@ -46,6 +46,7 @@ interface ProductFormModalProps {
   open: boolean;
   onClose: () => void;
   onSuccess: () => void;
+  product?: Product;
 }
 
 const EMPTY_FORM = { name: '', barcode: '', ncm: '', price: '', stock: '' };
@@ -54,17 +55,36 @@ interface FormErrors {
   name?: string;
   price?: string;
   stock?: string;
+  ncm?: string;
 }
 
 const parseCurrency = (value: string): number =>
   parseFloat(value.replace(/\./g, '').replace(',', '.'));
 
-const ProductFormModal: FC<ProductFormModalProps> = ({ open, onClose, onSuccess }) => {
+const ProductFormModal: FC<ProductFormModalProps> = ({ open, onClose, onSuccess, product }) => {
   const { showToast } = useToast();
-  const { loading, create } = useProduct();
+  const { loading, create, update } = useProduct();
 
   const [form, setForm] = useState(EMPTY_FORM);
   const [errors, setErrors] = useState<FormErrors>({});
+
+  const isEditMode = !!product;
+
+  useEffect(() => {
+    if (open && product) {
+      setForm({
+        name: product.name,
+        barcode: product.barcode ?? '',
+        ncm: product.ncm ?? '',
+        price: product.price.toFixed(2).replace('.', ','),
+        stock: String(product.stock),
+      });
+      setErrors({});
+    } else if (!open) {
+      setForm(EMPTY_FORM);
+      setErrors({});
+    }
+  }, [open, product]);
 
   const handleChange = (field: keyof typeof EMPTY_FORM, value: string) => {
     setForm(prev => ({ ...prev, [field]: value }));
@@ -83,16 +103,18 @@ const ProductFormModal: FC<ProductFormModalProps> = ({ open, onClose, onSuccess 
       next.price = 'Informe um preço válido.';
     }
 
-    const stock = parseInt(form.stock, 10);
-    if (form.stock === '' || isNaN(stock) || stock < 0 || !Number.isInteger(stock)) {
-      next.stock = 'Informe uma quantidade válida (número inteiro ≥ 0).';
+    if (!isEditMode) {
+      const stock = parseInt(form.stock, 10);
+      if (form.stock === '' || isNaN(stock) || stock < 0 || !Number.isInteger(stock)) {
+        next.stock = 'Informe uma quantidade válida (número inteiro ≥ 0).';
+      }
     }
 
     setErrors(next);
     return Object.keys(next).length === 0;
   };
 
-  const buildPayload = (): CreateProductRequest => ({
+  const buildCreatePayload = (): CreateProductRequest => ({
     name: form.name.trim(),
     barcode: form.barcode.trim() || undefined,
     ncm: form.ncm.trim() || undefined,
@@ -100,37 +122,44 @@ const ProductFormModal: FC<ProductFormModalProps> = ({ open, onClose, onSuccess 
     stock: parseInt(form.stock, 10),
   });
 
-  const resetForm = () => {
-    setForm(EMPTY_FORM);
-    setErrors({});
-  };
-
   const handleClose = () => {
-    resetForm();
     onClose();
   };
 
   const handleSubmit = async (andNew: boolean) => {
     if (!validate()) return;
     try {
-      await create(buildPayload());
-      showToast('Produto criado com sucesso.', 'success');
-      onSuccess();
-      if (andNew) {
-        resetForm();
-      } else {
+      if (isEditMode) {
+        await update(product.id, {
+          name: form.name.trim(),
+          barcode: form.barcode.trim() || undefined,
+          ncm: form.ncm.trim() || undefined,
+          price: parseCurrency(form.price),
+        });
+        showToast('Produto atualizado com sucesso.', 'success');
+        onSuccess();
         handleClose();
+      } else {
+        await create(buildCreatePayload());
+        showToast('Produto criado com sucesso.', 'success');
+        onSuccess();
+        if (andNew) {
+          setForm(EMPTY_FORM);
+          setErrors({});
+        } else {
+          handleClose();
+        }
       }
     } catch {
-      showToast('Erro ao criar produto.', 'error');
+      showToast(isEditMode ? 'Erro ao atualizar produto.' : 'Erro ao criar produto.', 'error');
     }
   };
 
-  const isSubmitting = loading === 'create';
+  const isSubmitting = loading === 'create' || loading === 'update';
 
   return (
     <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
-      <DialogTitle>Novo Produto</DialogTitle>
+      <DialogTitle>{isEditMode ? 'Editar Produto' : 'Novo Produto'}</DialogTitle>
 
       <DialogContent dividers>
         <Box sx={{ pt: 1 }}>
@@ -169,15 +198,15 @@ const ProductFormModal: FC<ProductFormModalProps> = ({ open, onClose, onSuccess 
 
             <Grid size={{ xs: 12, sm: 6 }}>
               <TextField
-                label="Estoque inicial"
+                label={isEditMode ? 'Estoque' : 'Estoque inicial'}
                 fullWidth
-                required
+                required={!isEditMode}
                 type="number"
                 value={form.stock}
                 onChange={e => handleChange('stock', e.target.value)}
                 error={!!errors.stock}
-                helperText={errors.stock}
-                disabled={isSubmitting}
+                helperText={isEditMode ? 'Ajuste via botão dedicado na tabela.' : errors.stock}
+                disabled={isSubmitting || isEditMode}
                 slotProps={{ htmlInput: { min: 0, step: 1 } }}
               />
             </Grid>
@@ -213,11 +242,15 @@ const ProductFormModal: FC<ProductFormModalProps> = ({ open, onClose, onSuccess 
         <Button variant="text" onClick={handleClose} disabled={isSubmitting}>
           Cancelar
         </Button>
-        <Button variant="outlined" onClick={() => handleSubmit(true)} disabled={isSubmitting}>
+        <Button
+          variant="outlined"
+          onClick={() => handleSubmit(true)}
+          disabled={isSubmitting || isEditMode}
+        >
           {isSubmitting ? 'Salvando...' : 'Adicionar e Novo'}
         </Button>
         <Button variant="contained" onClick={() => handleSubmit(false)} disabled={isSubmitting}>
-          {isSubmitting ? 'Salvando...' : 'Adicionar'}
+          {isSubmitting ? 'Salvando...' : isEditMode ? 'Alterar' : 'Adicionar'}
         </Button>
       </DialogActions>
     </Dialog>

@@ -5,8 +5,8 @@ import { ThemeProvider, createTheme } from '@mui/material/styles';
 import { createContext, useContext, useMemo, useState, type ReactNode } from 'react';
 import { darkPalette, lightPalette } from './Palette';
 import { typography } from './Typography';
-import { components } from './Components';
-import { lightComponents } from './LightComponents';
+//import { components } from './Components';
+//import { lightComponents } from './LightComponents';
 
 interface ThemeContextType {
   toggleDarkMode: () => void;
@@ -49,7 +49,7 @@ export default function ThemeModeProvider({ children }: ThemeModeProviderProps) 
         borderRadius: 8,
       },
       typography,
-      components: isDarkMode ? components : lightComponents,
+      //components: isDarkMode ? components : lightComponents,
     }),
     [isDarkMode]);
 

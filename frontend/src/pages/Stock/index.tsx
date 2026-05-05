@@ -23,7 +23,6 @@ import {
   GridRowParams,
   GridRowSelectionModel,
 } from '@mui/x-data-grid';
-import { useNavigate } from 'react-router-dom';
 import ConfirmDialog from '../../components/ui/ConfirmDialog';
 import { useAuth } from '../../hooks/useAuth';
 import { useProduct } from '../../hooks/useProduct';
@@ -43,7 +42,6 @@ const SORT_OPTIONS = [
 const EMPTY_SELECTION: GridRowSelectionModel = { type: 'include', ids: new Set<GridRowId>() };
 
 const StockPage: FC = () => {
-  const navigate = useNavigate();
   const { isAdmin } = useAuth();
   const { showToast } = useToast();
   const { loading, getAll, remove, removeMany } = useProduct();
@@ -59,6 +57,7 @@ const StockPage: FC = () => {
   const [pendingIds, setPendingIds] = useState<string[]>([]);
   const [refreshToken, setRefreshToken] = useState(0);
   const [modalOpen, setModalOpen] = useState(false);
+  const [editProduct, setEditProduct] = useState<Product | null>(null);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -135,7 +134,7 @@ const StockPage: FC = () => {
             <GridActionsCellItem
               icon={<EditIcon />}
               label="Editar"
-              onClick={() => navigate(`/products/${params.row.id}/edit`)}
+              onClick={() => { setEditProduct(params.row); setModalOpen(true); }}
             />,
             <GridActionsCellItem
               icon={<DeleteIcon color="error" />}
@@ -282,7 +281,8 @@ const StockPage: FC = () => {
 
       <ProductFormModal
         open={modalOpen}
-        onClose={() => setModalOpen(false)}
+        product={editProduct ?? undefined}
+        onClose={() => { setModalOpen(false); setEditProduct(null); }}
         onSuccess={() => setRefreshToken(t => t + 1)}
       />
 
