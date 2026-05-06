@@ -1,7 +1,7 @@
 import { useState } from 'react';
-import reportService, { SalesReportParams } from '../services/reportService';
+import reportService, { SalesChartParams, SalesReportParams } from '../services/reportService';
 
-type LoadingState = 'metrics' | 'byOperator' | 'stock' | 'exportSales' | 'exportStock' | null;
+type LoadingState = 'metrics' | 'byOperator' | 'stock' | 'exportSales' | 'exportStock' | 'chart' | null;
 
 export function useReport() {
   const [loading, setLoading] = useState<LoadingState>(null);
@@ -51,5 +51,14 @@ export function useReport() {
     }
   };
 
-  return { loading, getSalesMetrics, getSalesByOperator, getStock, exportSalesCSV, exportStockCSV };
+  const getSalesChart = async (params: SalesChartParams) => {
+    setLoading('chart');
+    try {
+      return await reportService.getSalesChart(params);
+    } finally {
+      setLoading(null);
+    }
+  };
+
+  return { loading, getSalesMetrics, getSalesByOperator, getStock, exportSalesCSV, exportStockCSV, getSalesChart };
 }

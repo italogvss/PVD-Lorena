@@ -71,6 +71,8 @@ builder.Services.AddValidatorsFromAssemblyContaining<LoginRequestValidator>();
 // Application services
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IProductService, ProductService>();
+builder.Services.AddScoped<ISaleService, SaleService>();
+builder.Services.AddScoped<IReportService, ReportService>();
 
 // Repositories
 builder.Services.AddScoped<IUserRepository, UserRepository>();

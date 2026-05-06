@@ -1,10 +1,18 @@
 import api from '../lib/axios';
-import type { SalesMetrics, SalesByOperator, StockSnapshot, ReportPeriod } from '../types';
+import type { SalesChartPoint, SalesMetrics, SalesByOperator, StockSnapshot, ReportPeriod } from '../types';
 
 export interface SalesReportParams {
   period?: ReportPeriod;
   startDate?: string;
   endDate?: string;
+}
+
+export type ChartGroupBy = 'day' | 'week' | 'month' | 'year';
+
+export interface SalesChartParams {
+  startDate: string;
+  endDate: string;
+  groupBy: ChartGroupBy;
 }
 
 const reportService = {
@@ -22,6 +30,9 @@ const reportService = {
 
   exportStockCSV: () =>
     api.get<Blob>('/api/reports/stock/export', { responseType: 'blob' }).then(r => r.data),
+
+  getSalesChart: (params: SalesChartParams) =>
+    api.get<SalesChartPoint[]>('/api/reports/sales/chart', { params }).then(r => r.data),
 };
 
 export default reportService;

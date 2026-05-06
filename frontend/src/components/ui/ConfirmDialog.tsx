@@ -13,9 +13,14 @@ interface ConfirmDialogProps {
   onConfirm: () => void;
   onCancel: () => void;
   loading?: boolean;
+  confirmLabel?: string;
+  loadingLabel?: string;
 }
 
-const ConfirmDialog: FC<ConfirmDialogProps> = ({ open, title, message, onConfirm, onCancel, loading = false }) => (
+const ConfirmDialog: FC<ConfirmDialogProps> = ({
+  open, title, message, onConfirm, onCancel,
+  loading = false, confirmLabel = 'Excluir', loadingLabel = 'Aguarde...',
+}) => (
   <Dialog open={open} onClose={onCancel} maxWidth="xs" fullWidth>
     <DialogTitle>{title}</DialogTitle>
     <DialogContent>
@@ -23,10 +28,10 @@ const ConfirmDialog: FC<ConfirmDialogProps> = ({ open, title, message, onConfirm
     </DialogContent>
     <DialogActions>
       <Button onClick={onCancel} disabled={loading}>
-        Cancelar
+        Voltar
       </Button>
       <Button onClick={onConfirm} color="error" variant="contained" disabled={loading}>
-        {loading ? 'Excluindo...' : 'Excluir'}
+        {loading ? loadingLabel : confirmLabel}
       </Button>
     </DialogActions>
   </Dialog>

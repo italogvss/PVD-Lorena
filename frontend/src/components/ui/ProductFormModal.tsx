@@ -63,7 +63,7 @@ const parseCurrency = (value: string): number =>
 
 const ProductFormModal: FC<ProductFormModalProps> = ({ open, onClose, onSuccess, product }) => {
   const { showToast } = useToast();
-  const { loading, create, update } = useProduct();
+  const { loading, create, update, adjustStock } = useProduct();
 
   const [form, setForm] = useState(EMPTY_FORM);
   const [errors, setErrors] = useState<FormErrors>({});
@@ -103,11 +103,9 @@ const ProductFormModal: FC<ProductFormModalProps> = ({ open, onClose, onSuccess,
       next.price = 'Informe um preço válido.';
     }
 
-    if (!isEditMode) {
-      const stock = parseInt(form.stock, 10);
-      if (form.stock === '' || isNaN(stock) || stock < 0 || !Number.isInteger(stock)) {
-        next.stock = 'Informe uma quantidade válida (número inteiro ≥ 0).';
-      }
+    const stock = parseInt(form.stock, 10);
+    if (form.stock === '' || isNaN(stock) || stock < 0 || !Number.isInteger(stock)) {
+      next.stock = 'Informe uma quantidade válida (número inteiro ≥ 0).';
     }
 
     setErrors(next);
@@ -130,12 +128,20 @@ const ProductFormModal: FC<ProductFormModalProps> = ({ open, onClose, onSuccess,
     if (!validate()) return;
     try {
       if (isEditMode) {
+        const newStock = parseInt(form.stock, 10);
+        const delta = newStock - product.stock;
+
         await update(product.id, {
           name: form.name.trim(),
           barcode: form.barcode.trim() || undefined,
           ncm: form.ncm.trim() || undefined,
           price: parseCurrency(form.price),
         });
+
+        if (delta !== 0) {
+          await adjustStock(product.id, delta);
+        }
+
         showToast('Produto atualizado com sucesso.', 'success');
         onSuccess();
         handleClose();
@@ -155,7 +161,7 @@ const ProductFormModal: FC<ProductFormModalProps> = ({ open, onClose, onSuccess,
     }
   };
 
-  const isSubmitting = loading === 'create' || loading === 'update';
+  const isSubmitting = loading === 'create' || loading === 'update' || loading === 'adjustStock';
 
   return (
     <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
@@ -200,13 +206,13 @@ const ProductFormModal: FC<ProductFormModalProps> = ({ open, onClose, onSuccess,
               <TextField
                 label={isEditMode ? 'Estoque' : 'Estoque inicial'}
                 fullWidth
-                required={!isEditMode}
+                required
                 type="number"
                 value={form.stock}
                 onChange={e => handleChange('stock', e.target.value)}
                 error={!!errors.stock}
-                helperText={isEditMode ? 'Ajuste via botão dedicado na tabela.' : errors.stock}
-                disabled={isSubmitting || isEditMode}
+                helperText={errors.stock}
+                disabled={isSubmitting}
                 slotProps={{ htmlInput: { min: 0, step: 1 } }}
               />
             </Grid>

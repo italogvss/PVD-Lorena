@@ -1,11 +1,13 @@
-import { FC, useState } from 'react';
+import { FC, useCallback, useEffect, useState } from 'react';
 import Autocomplete from '@mui/material/Autocomplete';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Chip from '@mui/material/Chip';
+import CircularProgress from '@mui/material/CircularProgress';
 import Divider from '@mui/material/Divider';
 import FormControl from '@mui/material/FormControl';
 import IconButton from '@mui/material/IconButton';
+import InputAdornment from '@mui/material/InputAdornment';
 import MenuItem from '@mui/material/MenuItem';
 import Select from '@mui/material/Select';
 import TextField from '@mui/material/TextField';
@@ -14,30 +16,25 @@ import ToggleButtonGroup from '@mui/material/ToggleButtonGroup';
 import Typography from '@mui/material/Typography';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
+import RemoveIcon from '@mui/icons-material/Remove';
+import PersonIcon from '@mui/icons-material/Person';
 import SearchIcon from '@mui/icons-material/Search';
 import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';
 import { useAuth } from '../../hooks/useAuth';
+import { useProduct } from '../../hooks/useProduct';
+import { useSale } from '../../hooks/useSale';
+import { useToast } from '../../hooks/useToast';
 import type { PaymentMethod, Product } from '../../types';
 import { formatBRL } from '../../utils/currency';
+import { generateReceiptPDF } from '../../utils/pdf';
 
 interface CartItem {
   productId: string;
   productName: string;
   unitPrice: number;
   quantity: number;
+  stock: number;
 }
-
-type MockProduct = Pick<Product, 'id' | 'name' | 'price' | 'stock'>;
-
-const MOCK_PRODUCTS: MockProduct[] = [
-  { id: '1', name: 'Notebook Dell Inspiron 15', price: 3299.9, stock: 5 },
-  { id: '2', name: 'Mouse Logitech MX Master 3', price: 599.9, stock: 12 },
-  { id: '3', name: 'Teclado Mecânico Redragon', price: 279.9, stock: 8 },
-  { id: '4', name: 'Monitor LG 24" IPS', price: 1149.9, stock: 3 },
-  { id: '5', name: 'Headset HyperX Cloud II', price: 449.9, stock: 7 },
-  { id: '6', name: 'Webcam Logitech C920', price: 389.9, stock: 10 },
-  { id: '7', name: 'SSD Kingston 480GB', price: 219.9, stock: 15 },
-];
 
 const PAYMENT_LABELS: Record<PaymentMethod, string> = {
   Cash: 'Dinheiro',
@@ -50,22 +47,65 @@ const INSTALLMENT_OPTIONS = [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
 
 const POSPage: FC = () => {
   const { user } = useAuth();
+  const { showToast } = useToast();
+  const { getAll: getProducts, loading: productLoading } = useProduct();
+  const { create: createSale, loading: saleLoading } = useSale();
+
   const [cart, setCart] = useState<CartItem[]>([]);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('Cash');
   const [installmentCount, setInstallmentCount] = useState(2);
+  const [customerName, setCustomerName] = useState('');
+  const [amountPaid, setAmountPaid] = useState('');
   const [hoveredItem, setHoveredItem] = useState<string | null>(null);
 
+  const [searchInput, setSearchInput] = useState('');
+  const [searchOptions, setSearchOptions] = useState<Product[]>([]);
+
   const isInstallment = paymentMethod === 'Credit Card';
+  const isCash = paymentMethod === 'Cash';
 
   const total = cart.reduce((acc, item) => acc + item.unitPrice * item.quantity, 0);
   const totalItems = cart.reduce((acc, item) => acc + item.quantity, 0);
   const installmentValue = isInstallment && installmentCount > 0 ? total / installmentCount : 0;
+  const amountPaidNum = parseFloat(amountPaid) || 0;
+  const change = isCash && amountPaidNum > total ? amountPaidNum - total : 0;
 
-  const addToCart = (product: MockProduct | null) => {
+  const fetchProducts = useCallback(async (name: string) => {
+    if (!name.trim()) {
+      setSearchOptions([]);
+      return;
+    }
+    try {
+      const result = await getProducts({ page: 1, pageSize: 20, name });
+      setSearchOptions(result?.data ?? []);
+    } catch {
+      setSearchOptions([]);
+    }
+  }, [getProducts]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => fetchProducts(searchInput), 300);
+    return () => clearTimeout(timer);
+  }, [searchInput, fetchProducts]);
+
+  const addToCart = (product: Product | null) => {
     if (!product) return;
+    setSearchInput('');
+    setSearchOptions([]);
+
+    const existing = cart.find((i) => i.productId === product.id);
+    if (existing && existing.quantity >= product.stock) {
+      showToast(`Estoque insuficiente para "${product.name}". Disponível: ${product.stock} unid.`, 'error');
+      return;
+    }
+    if (!existing && product.stock < 1) {
+      showToast(`"${product.name}" está sem estoque.`, 'error');
+      return;
+    }
+
     setCart((prev) => {
-      const existing = prev.find((i) => i.productId === product.id);
-      if (existing) {
+      const found = prev.find((i) => i.productId === product.id);
+      if (found) {
         return prev.map((i) =>
           i.productId === product.id ? { ...i, quantity: i.quantity + 1 } : i
         );
@@ -77,6 +117,7 @@ const POSPage: FC = () => {
           productName: product.name,
           unitPrice: product.price,
           quantity: 1,
+          stock: product.stock,
         },
       ];
     });
@@ -85,7 +126,14 @@ const POSPage: FC = () => {
   const updateQuantity = (productId: string, value: number) => {
     if (value < 1) return;
     setCart((prev) =>
-      prev.map((i) => (i.productId === productId ? { ...i, quantity: value } : i))
+      prev.map((i) => {
+        if (i.productId !== productId) return i;
+        if (value > i.stock) {
+          showToast(`Estoque máximo para este produto: ${i.stock} unid.`, 'error');
+          return i;
+        }
+        return { ...i, quantity: value };
+      })
     );
   };
 
@@ -97,7 +145,41 @@ const POSPage: FC = () => {
     setCart([]);
     setPaymentMethod('Cash');
     setInstallmentCount(2);
+    setCustomerName('');
+    setAmountPaid('');
   };
+
+  const handleFinalizarVenda = async () => {
+    if (cart.length === 0) return;
+
+    if (isCash && amountPaidNum < total) {
+      showToast('Valor pago insuficiente para cobrir o total.', 'error');
+      return;
+    }
+
+    try {
+      const result = await createSale({
+        customerName: customerName.trim() || undefined,
+        paymentMethod,
+        isInstallment,
+        installmentCount: isInstallment ? installmentCount : undefined,
+        amountPaid: isCash ? amountPaidNum : total,
+        items: cart.map((item) => ({ productId: item.productId, quantity: item.quantity })),
+      });
+
+      if (result) {
+        generateReceiptPDF(result);
+        showToast('Venda finalizada com sucesso!', 'success');
+        handleClearCart();
+      }
+    } catch (err: unknown) {
+      const detail =
+        (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail;
+      showToast(detail ?? 'Erro ao finalizar venda.', 'error');
+    }
+  };
+
+  const isSubmitting = saleLoading === 'create';
 
   return (
     <Box
@@ -128,12 +210,21 @@ const POSPage: FC = () => {
             Buscar Produto
           </Typography>
           <Autocomplete
-            options={MOCK_PRODUCTS}
+            options={searchOptions}
             getOptionLabel={(option) => option.name}
+            inputValue={searchInput}
+            onInputChange={(_, value) => setSearchInput(value)}
             onChange={(_, value) => addToCart(value)}
             value={null}
             clearOnEscape
             blurOnSelect
+            filterOptions={(x) => x}
+            noOptionsText={
+              searchInput.trim().length === 0
+                ? 'Digite para buscar...'
+                : 'Nenhum produto encontrado'
+            }
+            loading={productLoading === 'fetch'}
             renderInput={(params) => (
               <TextField
                 {...params}
@@ -145,6 +236,9 @@ const POSPage: FC = () => {
                     startAdornment: (
                       <SearchIcon sx={{ color: 'text.secondary', ml: 1, mr: 0.5, fontSize: 22 }} />
                     ),
+                    endAdornment: productLoading === 'fetch'
+                      ? <CircularProgress size={18} />
+                      : (params.slotProps?.input as { endAdornment?: React.ReactNode })?.endAdornment,
                   },
                 }}
               />
@@ -164,7 +258,6 @@ const POSPage: FC = () => {
                 </Typography>
               </Box>
             )}
-            noOptionsText="Nenhum produto encontrado"
           />
         </Box>
 
@@ -233,7 +326,6 @@ const POSPage: FC = () => {
                   '&:hover': { bgcolor: 'action.hover' },
                 }}
               >
-                {/* Product info */}
                 <Box sx={{ flexGrow: 1, minWidth: 0 }}>
                   <Typography
                     variant="body1"
@@ -252,19 +344,40 @@ const POSPage: FC = () => {
                   </Typography>
                 </Box>
 
-                {/* Quantity controls */}
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                  <IconButton
+                    onClick={() => updateQuantity(item.productId, item.quantity - 1)}
+                    size="small"
+                    color="primary"
+                    disabled={item.quantity <= 1}
+                    sx={{
+                      border: '1px solid',
+                      borderColor: 'primary.main',
+                      borderRadius: 1.5,
+                      '&:hover': { bgcolor: 'primary.main', color: 'background.default' },
+                    }}
+                  >
+                    <RemoveIcon fontSize="small" />
+                  </IconButton>
                   <TextField
                     type="number"
                     value={item.quantity}
                     onChange={(e) => updateQuantity(item.productId, Number(e.target.value))}
-                    slotProps={{ htmlInput: { min: 1, style: { textAlign: 'center', fontSize: '1.1rem', fontWeight: 700, width: 52, padding: '8px 4px' } } }}
-                    sx={{ width: 72 }}
+                    slotProps={{
+                      htmlInput: {
+                        min: 1,
+                        max: item.stock,
+                        style: { textAlign: 'center', fontSize: '1.1rem', fontWeight: 700, width: 40, padding: '8px 4px' },
+                      },
+                      input: { disableUnderline: true, sx: { '& input::-webkit-outer-spin-button, & input::-webkit-inner-spin-button': { display: 'none' }, 'input[type=number]': { MozAppearance: 'textfield' } } },
+                    }}
+                    sx={{ width: 60 }}
                   />
                   <IconButton
                     onClick={() => updateQuantity(item.productId, item.quantity + 1)}
                     size="small"
                     color="primary"
+                    disabled={item.quantity >= item.stock}
                     sx={{
                       border: '1px solid',
                       borderColor: 'primary.main',
@@ -276,7 +389,6 @@ const POSPage: FC = () => {
                   </IconButton>
                 </Box>
 
-                {/* Subtotal */}
                 <Typography
                   variant="body1"
                   sx={{ fontWeight: 700, fontSize: '1.05rem', minWidth: 90, textAlign: 'right' }}
@@ -284,7 +396,6 @@ const POSPage: FC = () => {
                   {formatBRL(item.unitPrice * item.quantity)}
                 </Typography>
 
-                {/* Delete button — visible on hover */}
                 <IconButton
                   onClick={() => removeFromCart(item.productId)}
                   size="small"
@@ -339,6 +450,26 @@ const POSPage: FC = () => {
 
           <Divider />
 
+          {/* Customer name */}
+          <TextField
+            label="Cliente (opcional)"
+            value={customerName}
+            onChange={(e) => setCustomerName(e.target.value)}
+            placeholder="Nome do cliente..."
+            size="small"
+            slotProps={{
+              input: {
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <PersonIcon sx={{ fontSize: 18, color: 'text.secondary' }} />
+                  </InputAdornment>
+                ),
+              },
+            }}
+          />
+
+          <Divider />
+
           {/* Items count */}
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <Typography variant="h6" color="text.secondary">
@@ -360,13 +491,23 @@ const POSPage: FC = () => {
               exclusive
               value={paymentMethod}
               onChange={(_, val) => val && setPaymentMethod(val as PaymentMethod)}
-              sx={{ flexWrap: 'wrap', gap: 1 }}
+              sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1 }}
             >
               {(Object.keys(PAYMENT_LABELS) as PaymentMethod[]).map((method) => (
                 <ToggleButton
                   key={method}
                   value={method}
-                  sx={{ flex: '1 1 calc(50% - 8px)', py: 1.5, fontSize: '1rem', fontWeight: 600 }}
+                  sx={{
+                    py: 1.5,
+                    fontSize: '1rem',
+                    fontWeight: 600,
+                    borderRadius: '8px !important',
+                    border: '1px solid',
+                    borderColor: 'divider',
+                    '&.Mui-selected': {
+                      borderColor: 'primary.main',
+                    },
+                  }}
                 >
                   {PAYMENT_LABELS[method]}
                 </ToggleButton>
@@ -384,7 +525,6 @@ const POSPage: FC = () => {
                 <Select
                   value={installmentCount}
                   onChange={(e) => setInstallmentCount(Number(e.target.value))}
-                  displayEmpty
                 >
                   {INSTALLMENT_OPTIONS.map((n) => (
                     <MenuItem key={n} value={n}>
@@ -403,6 +543,31 @@ const POSPage: FC = () => {
             </Box>
           )}
 
+          {/* Amount paid — only for Cash */}
+          {isCash && (
+            <Box>
+              <TextField
+                label="Valor recebido"
+                value={amountPaid}
+                onChange={(e) => setAmountPaid(e.target.value)}
+                type="number"
+                fullWidth
+                size="small"
+                slotProps={{
+                  input: {
+                    startAdornment: <InputAdornment position="start">R$</InputAdornment>,
+                  },
+                  htmlInput: { min: 0, step: '0.01' },
+                }}
+              />
+              {amountPaidNum >= total && total > 0 && (
+                <Typography variant="body2" color="success.main" sx={{ mt: 1, fontWeight: 600 }}>
+                  Troco: {formatBRL(change)}
+                </Typography>
+              )}
+            </Box>
+          )}
+
           <Divider />
 
           {/* Total */}
@@ -410,11 +575,7 @@ const POSPage: FC = () => {
             <Typography variant="h5" sx={{ fontWeight: 700 }}>
               Total
             </Typography>
-            <Typography
-              variant="h4"
-              color="primary"
-              sx={{ fontWeight: 800 }}
-            >
+            <Typography variant="h4" color="primary" sx={{ fontWeight: 800 }}>
               {formatBRL(total)}
             </Typography>
           </Box>
@@ -428,7 +589,9 @@ const POSPage: FC = () => {
             variant="contained"
             color="primary"
             size="large"
-            disabled={cart.length === 0}
+            disabled={cart.length === 0 || isSubmitting}
+            onClick={handleFinalizarVenda}
+            startIcon={isSubmitting ? <CircularProgress size={20} color="inherit" /> : undefined}
             sx={{
               py: 2,
               fontSize: '1.2rem',
@@ -437,13 +600,13 @@ const POSPage: FC = () => {
               borderRadius: 2,
             }}
           >
-            Finalizar Venda
+            {isSubmitting ? 'Finalizando...' : 'Finalizar Venda'}
           </Button>
           <Button
             variant="outlined"
             color="error"
             size="large"
-            disabled={cart.length === 0}
+            disabled={cart.length === 0 || isSubmitting}
             onClick={handleClearCart}
             sx={{
               py: 1.75,

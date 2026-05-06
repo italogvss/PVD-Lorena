@@ -125,6 +125,12 @@ export interface SalesByOperator {
   totalRevenue: number;
 }
 
+export interface SalesChartPoint {
+  label: string;
+  total: number;
+  count: number;
+}
+
 export interface StockSnapshot {
   productId: string;
   productName: string;
