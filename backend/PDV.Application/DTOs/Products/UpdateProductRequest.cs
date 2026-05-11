@@ -4,4 +4,5 @@ public record UpdateProductRequest(
     string Name,
     string? Barcode,
     string? Ncm,
-    decimal Price);
+    decimal Price,
+    decimal? PurchasePrice);

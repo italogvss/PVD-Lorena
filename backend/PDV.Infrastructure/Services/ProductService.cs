@@ -44,6 +44,7 @@ public class ProductService(
             Barcode = request.Barcode,
             NCM = request.Ncm,
             Price = request.Price,
+            PurchasePrice = request.PurchasePrice,
             Stock = request.Stock,
             IsActive = true,
             CreatedAt = DateTime.UtcNow
@@ -67,6 +68,7 @@ public class ProductService(
         product.Barcode = request.Barcode;
         product.NCM = request.Ncm;
         product.Price = request.Price;
+        product.PurchasePrice = request.PurchasePrice;
 
         await repository.UpdateAsync(product);
         return Map(product);
@@ -97,5 +99,5 @@ public class ProductService(
     }
 
     private static ProductResponse Map(Product p) =>
-        new(p.Id, p.Name, p.Barcode, p.NCM, p.Price, p.Stock, p.IsActive, p.CreatedAt);
+        new(p.Id, p.Name, p.Barcode, p.NCM, p.Price, p.PurchasePrice, p.Stock, p.IsActive, p.CreatedAt);
 }

@@ -5,4 +5,5 @@ public record CreateProductRequest(
     string? Barcode,
     string? Ncm,
     decimal Price,
+    decimal? PurchasePrice,
     int Stock);

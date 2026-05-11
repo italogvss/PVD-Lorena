@@ -1,6 +1,7 @@
-import { FC, forwardRef, useEffect, useState } from 'react';
+import { FC, forwardRef, useMemo, useState } from 'react';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
+import Chip from '@mui/material/Chip';
 import Dialog from '@mui/material/Dialog';
 import DialogActions from '@mui/material/DialogActions';
 import DialogContent from '@mui/material/DialogContent';
@@ -8,6 +9,7 @@ import DialogTitle from '@mui/material/DialogTitle';
 import Divider from '@mui/material/Divider';
 import Grid from '@mui/material/Grid';
 import TextField from '@mui/material/TextField';
+import Typography from '@mui/material/Typography';
 import type { InputBaseComponentProps } from '@mui/material/InputBase';
 import { IMaskInput } from 'react-imask';
 import { useProduct } from '../../hooks/useProduct';
@@ -49,7 +51,14 @@ interface ProductFormModalProps {
   product?: Product;
 }
 
-const EMPTY_FORM = { name: '', barcode: '', ncm: '', price: '', stock: '' };
+const EMPTY_FORM = {
+  name: '',
+  barcode: '',
+  ncm: '',
+  price: '',
+  purchasePrice: '',
+  stock: '',
+};
 
 interface FormErrors {
   name?: string;
@@ -61,35 +70,51 @@ interface FormErrors {
 const parseCurrency = (value: string): number =>
   parseFloat(value.replace(/\./g, '').replace(',', '.'));
 
+const formatCurrencyValue = (value: number): string =>
+  value.toFixed(2).replace('.', ',');
+
 const ProductFormModal: FC<ProductFormModalProps> = ({ open, onClose, onSuccess, product }) => {
   const { showToast } = useToast();
   const { loading, create, update, adjustStock } = useProduct();
 
   const [form, setForm] = useState(EMPTY_FORM);
   const [errors, setErrors] = useState<FormErrors>({});
+  const [prevOpen, setPrevOpen] = useState(false);
 
   const isEditMode = !!product;
 
-  useEffect(() => {
+  // React-recommended pattern: adjust state when a prop changes during render.
+  // Calling setState here causes React to discard the output and re-render immediately,
+  // but the condition won't be true on the next render, so no infinite loop occurs.
+  if (open !== prevOpen) {
+    setPrevOpen(open);
+    setErrors({});
     if (open && product) {
       setForm({
         name: product.name,
         barcode: product.barcode ?? '',
         ncm: product.ncm ?? '',
-        price: product.price.toFixed(2).replace('.', ','),
+        price: formatCurrencyValue(product.price),
+        purchasePrice: product.purchasePrice != null ? formatCurrencyValue(product.purchasePrice) : '',
         stock: String(product.stock),
       });
-      setErrors({});
-    } else if (!open) {
+    } else {
       setForm(EMPTY_FORM);
-      setErrors({});
     }
-  }, [open, product]);
+  }
 
   const handleChange = (field: keyof typeof EMPTY_FORM, value: string) => {
     setForm(prev => ({ ...prev, [field]: value }));
     setErrors(prev => ({ ...prev, [field]: undefined }));
   };
+
+  const profitPercent = useMemo(() => {
+    const sale = parseCurrency(form.price);
+    const purchase = parseCurrency(form.purchasePrice);
+    if (!form.purchasePrice || isNaN(purchase) || purchase <= 0) return null;
+    if (!form.price || isNaN(sale) || sale <= 0) return null;
+    return ((sale - purchase) / purchase) * 100;
+  }, [form.price, form.purchasePrice]);
 
   const validate = (): boolean => {
     const next: FormErrors = {};
@@ -112,13 +137,17 @@ const ProductFormModal: FC<ProductFormModalProps> = ({ open, onClose, onSuccess,
     return Object.keys(next).length === 0;
   };
 
-  const buildCreatePayload = (): CreateProductRequest => ({
-    name: form.name.trim(),
-    barcode: form.barcode.trim() || undefined,
-    ncm: form.ncm.trim() || undefined,
-    price: parseCurrency(form.price),
-    stock: parseInt(form.stock, 10),
-  });
+  const buildCreatePayload = (): CreateProductRequest => {
+    const purchasePrice = parseCurrency(form.purchasePrice);
+    return {
+      name: form.name.trim(),
+      barcode: form.barcode.trim() || undefined,
+      ncm: form.ncm.trim() || undefined,
+      price: parseCurrency(form.price),
+      purchasePrice: form.purchasePrice && !isNaN(purchasePrice) ? purchasePrice : undefined,
+      stock: parseInt(form.stock, 10),
+    };
+  };
 
   const handleClose = () => {
     onClose();
@@ -130,12 +159,14 @@ const ProductFormModal: FC<ProductFormModalProps> = ({ open, onClose, onSuccess,
       if (isEditMode) {
         const newStock = parseInt(form.stock, 10);
         const delta = newStock - product.stock;
+        const purchasePrice = parseCurrency(form.purchasePrice);
 
         await update(product.id, {
           name: form.name.trim(),
           barcode: form.barcode.trim() || undefined,
           ncm: form.ncm.trim() || undefined,
           price: parseCurrency(form.price),
+          purchasePrice: form.purchasePrice && !isNaN(purchasePrice) ? purchasePrice : undefined,
         });
 
         if (delta !== 0) {
@@ -163,12 +194,37 @@ const ProductFormModal: FC<ProductFormModalProps> = ({ open, onClose, onSuccess,
 
   const isSubmitting = loading === 'create' || loading === 'update' || loading === 'adjustStock';
 
+  const profitChipColor =
+    profitPercent === null ? undefined :
+    profitPercent >= 0 ? 'success' : 'error';
+
   return (
     <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
       <DialogTitle>{isEditMode ? 'Editar Produto' : 'Novo Produto'}</DialogTitle>
 
       <DialogContent dividers>
         <Box sx={{ pt: 1 }}>
+          {/* Profit indicator */}
+          <Box sx={{ mb: 2, minHeight: 28 }}>
+            {profitPercent !== null ? (
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <Typography variant="body2" color="text.secondary">
+                  Margem de lucro:
+                </Typography>
+                <Chip
+                  label={`${profitPercent >= 0 ? '+' : ''}${profitPercent.toFixed(1)}%`}
+                  color={profitChipColor}
+                  size="small"
+                  variant="outlined"
+                />
+              </Box>
+            ) : (
+              <Typography variant="body2" color="text.disabled">
+                Preencha o custo e o preço de venda para calcular a margem de lucro.
+              </Typography>
+            )}
+          </Box>
+
           <Grid container spacing={3}>
             <Grid size={12}>
               <TextField
@@ -185,7 +241,24 @@ const ProductFormModal: FC<ProductFormModalProps> = ({ open, onClose, onSuccess,
 
             <Grid size={{ xs: 12, sm: 6 }}>
               <TextField
-                label="Preço (R$)"
+                label="Custo (R$)"
+                fullWidth
+                value={form.purchasePrice}
+                onChange={e => handleChange('purchasePrice', e.target.value)}
+                disabled={isSubmitting}
+                helperText="Valor de compra (opcional)"
+                slotProps={{
+                  input: {
+                    inputComponent: CurrencyInput as React.ElementType<InputBaseComponentProps>,
+                    inputProps: { name: 'purchasePrice' },
+                  },
+                }}
+              />
+            </Grid>
+
+            <Grid size={{ xs: 12, sm: 6 }}>
+              <TextField
+                label="Preço de venda (R$)"
                 fullWidth
                 required
                 value={form.price}
@@ -227,7 +300,7 @@ const ProductFormModal: FC<ProductFormModalProps> = ({ open, onClose, onSuccess,
               />
             </Grid>
 
-            <Grid size={{ xs: 12, sm: 6 }}>
+            <Grid size={12}>
               <TextField
                 label="NCM"
                 fullWidth

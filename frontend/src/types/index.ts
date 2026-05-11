@@ -24,6 +24,7 @@ export interface Product {
   barcode?: string;
   ncm?: string;
   price: number;
+  purchasePrice?: number;
   stock: number;
   isActive: boolean;
   createdAt: string;
@@ -74,6 +75,7 @@ export interface CreateProductRequest {
   barcode?: string;
   ncm?: string;
   price: number;
+  purchasePrice?: number;
   stock: number;
 }
 
@@ -82,6 +84,7 @@ export interface UpdateProductRequest {
   barcode?: string;
   ncm?: string;
   price: number;
+  purchasePrice?: number;
 }
 
 export interface CreateSaleItemRequest {
@@ -100,14 +103,15 @@ export interface CreateSaleRequest {
 
 export interface CreateUserRequest {
   name: string;
-  email: string;
+  username: string;
   password: string;
   role: UserRole;
 }
 
 export interface UpdateUserRequest {
   name: string;
-  email: string;
+  username: string;
+  role: UserRole;
 }
 
 export interface SalesMetrics {

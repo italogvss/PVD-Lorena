@@ -139,23 +139,18 @@ const ReportsPage: FC = () => {
           spacing={2}
           sx={{ alignItems: { sm: 'center' }, flexWrap: 'wrap' }}
         >
-          <Box>
-            <Typography variant="caption" color="text.secondary" sx={{ mb: 0.5, display: 'block' }}>
-              Agrupar por
-            </Typography>
-            <ToggleButtonGroup
-              exclusive
-              size="small"
-              value={groupBy}
-              onChange={handleGroupByChange}
-            >
-              {(Object.keys(GROUP_LABELS) as ChartGroupBy[]).map(g => (
-                <ToggleButton key={g} value={g} sx={{ px: 2, fontWeight: 600 }}>
-                  {GROUP_LABELS[g]}
-                </ToggleButton>
-              ))}
-            </ToggleButtonGroup>
-          </Box>
+          <ToggleButtonGroup
+            exclusive
+            size="small"
+            value={groupBy}
+            onChange={handleGroupByChange}
+          >
+            {(Object.keys(GROUP_LABELS) as ChartGroupBy[]).map(g => (
+              <ToggleButton key={g} value={g} sx={{ px: 2, fontWeight: 600 }}>
+                {GROUP_LABELS[g]}
+              </ToggleButton>
+            ))}
+          </ToggleButtonGroup>
 
           <TextField
             label="Data início"

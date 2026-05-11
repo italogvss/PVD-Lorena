@@ -4,13 +4,18 @@ import CssBaseline from '@mui/material/CssBaseline';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import { createContext, useContext, useMemo, useState, type ReactNode } from 'react';
 import { darkPalette, lightPalette } from './Palette';
+import { cataventoDarkPalette, cataventoLightPalette } from './PaletteParty';
 import { typography } from './Typography';
 //import { components } from './Components';
 //import { lightComponents } from './LightComponents';
 
+export type ThemeVariant = 'default' | 'party';
+
 interface ThemeContextType {
   toggleDarkMode: () => void;
   isDarkMode: boolean;
+  themeVariant: ThemeVariant;
+  toggleThemeVariant: () => void;
 }
 
 declare module '@mui/material/Tab' {
@@ -36,26 +41,32 @@ interface ThemeModeProviderProps {
 
 export default function ThemeModeProvider({ children }: ThemeModeProviderProps) {
   const [isDarkMode, setIsDarkMode] = useState(true);
+  const [themeVariant, setThemeVariant] = useState<ThemeVariant>('default');
 
   const toggleDarkMode = () => setIsDarkMode((prev) => !prev);
+  const toggleThemeVariant = () => setThemeVariant((prev) => prev === 'default' ? 'party' : 'default');
 
-  const theme = useMemo(() =>
-    createTheme({
+  const theme = useMemo(() => {
+    const isParty = themeVariant === 'party';
+    const palette = isParty
+      ? (isDarkMode ? cataventoDarkPalette : cataventoLightPalette)
+      : (isDarkMode ? darkPalette : lightPalette);
+
+    return createTheme({
       palette: {
-        mode: isDarkMode ? "dark" : "light",
-        ...(isDarkMode ? darkPalette : lightPalette),
+        mode: isDarkMode ? 'dark' : 'light',
+        ...palette,
       },
       shape: {
-        borderRadius: 8,
+        borderRadius: isParty ? 12 : 8,
       },
       typography,
       //components: isDarkMode ? components : lightComponents,
-    }),
-    [isDarkMode]);
-
+    });
+  }, [isDarkMode, themeVariant]);
 
   return (
-    <ThemeContext.Provider value={{ toggleDarkMode, isDarkMode }}>
+    <ThemeContext.Provider value={{ toggleDarkMode, isDarkMode, themeVariant, toggleThemeVariant }}>
       <ThemeProvider theme={theme}>
         <CssBaseline />
         {children}

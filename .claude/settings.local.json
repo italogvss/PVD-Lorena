@@ -7,7 +7,11 @@
       "Bash(dotnet ef *)",
       "Bash(docker-compose up *)",
       "Bash(node -e \"console.log\\(require\\('./node_modules/@mui/material/package.json'\\).version\\)\")",
-      "Bash(xargs grep *)"
+      "Bash(xargs grep *)",
+      "Bash(dir \"c:\\\\Users\\\\Italo\\\\Documents\\\\Projetos\\\\PVD-Lorena\\\\frontend\\\\public\")",
+      "Bash(Get-ChildItem -Path \"c:\\\\Users\\\\Italo\\\\Documents\\\\Projetos\\\\PVD-Lorena\\\\backend\" -Directory)",
+      "Bash(Select-Object Name)",
+      "Bash(dir \"c:\\\\Users\\\\Italo\\\\Documents\\\\Projetos\\\\PVD-Lorena\\\\frontend\\\\\")"
     ]
   }
 }

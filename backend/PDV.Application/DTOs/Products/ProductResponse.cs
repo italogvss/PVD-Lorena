@@ -6,6 +6,7 @@ public record ProductResponse(
     string? Barcode,
     string? Ncm,
     decimal Price,
+    decimal? PurchasePrice,
     int Stock,
     bool IsActive,
     DateTime CreatedAt);

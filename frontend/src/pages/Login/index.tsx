@@ -67,13 +67,16 @@ const LoginPage: FC = () => {
         }}
       >
         <Stack spacing={0.5} sx={{ mb: 4, alignItems: 'center' }}>
-          <Typography
-            variant="h3"
-            color="primary"
-            sx={{ fontWeight: 800, letterSpacing: '0.12em' }}
-          >
-            PDV
-          </Typography>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+            <img src="/favicon.png" alt="" style={{ width: 40, height: 40 }} />
+            <Typography
+              variant="h3"
+              color="primary"
+              sx={{ fontWeight: 800, letterSpacing: '0.12em' }}
+            >
+              Catavento
+            </Typography>
+          </Box>
           <Typography variant="h6" color="text.secondary">
             Bem-vindo
           </Typography>

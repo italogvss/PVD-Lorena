@@ -1,3 +1,4 @@
+using System.Text;
 using Microsoft.EntityFrameworkCore;
 using PDV.Application.DTOs.Reports;
 using PDV.Application.Interfaces;
@@ -13,7 +14,7 @@ public class ReportService(AppDbContext context) : IReportService
         DateTime startDate, DateTime endDate, string groupBy)
     {
         var start = startDate.Date;
-        var end = endDate.Date.AddDays(1).AddTicks(-1); // end of last day
+        var end = endDate.Date.AddDays(1).AddTicks(-1);
 
         var sales = await context.Sales
             .Where(s => s.Status == SaleStatus.Active
@@ -48,6 +49,160 @@ public class ReportService(AppDbContext context) : IReportService
             _ => throw new BusinessException("Parâmetro groupBy inválido. Use: day, week, month ou year.")
         };
     }
+
+    public async Task<SalesMetricsResponse> GetSalesMetricsAsync(
+        string? period, DateTime? startDate, DateTime? endDate)
+    {
+        var (start, end) = ResolveDateRange(period, startDate, endDate);
+        var label = ResolvePeriodLabel(period, start, end);
+
+        var rows = await context.Sales
+            .Where(s => s.CreatedAt >= start && s.CreatedAt <= end)
+            .Select(s => new { s.Total, s.Status })
+            .ToListAsync();
+
+        var active = rows.Where(s => s.Status == SaleStatus.Active).ToList();
+        var totalSales = active.Count;
+        var totalRevenue = active.Sum(s => s.Total);
+        var averageTicket = totalSales > 0 ? totalRevenue / totalSales : 0m;
+        var cancelledCount = rows.Count(s => s.Status == SaleStatus.Cancelled);
+
+        return new SalesMetricsResponse(totalSales, totalRevenue, averageTicket, cancelledCount, label);
+    }
+
+    public async Task<List<SalesByOperatorResponse>> GetSalesByOperatorAsync(
+        string? period, DateTime? startDate, DateTime? endDate)
+    {
+        var (start, end) = ResolveDateRange(period, startDate, endDate);
+
+        var rows = await context.Sales
+            .Where(s => s.Status == SaleStatus.Active
+                     && s.CreatedAt >= start
+                     && s.CreatedAt <= end)
+            .Select(s => new { s.OperatorId, s.Operator.Name, s.Total })
+            .ToListAsync();
+
+        return rows
+            .GroupBy(s => new { s.OperatorId, s.Name })
+            .Select(g => new SalesByOperatorResponse(
+                g.Key.OperatorId,
+                g.Key.Name,
+                g.Count(),
+                g.Sum(s => s.Total)))
+            .OrderByDescending(r => r.TotalRevenue)
+            .ToList();
+    }
+
+    public async Task<List<StockSnapshotResponse>> GetStockSnapshotAsync()
+    {
+        return await context.Products
+            .OrderBy(p => p.Name)
+            .Select(p => new StockSnapshotResponse(
+                p.Id,
+                p.Name,
+                p.Barcode,
+                p.Stock,
+                p.Price,
+                p.IsActive))
+            .ToListAsync();
+    }
+
+    public async Task<byte[]> ExportSalesCsvAsync(
+        string? period, DateTime? startDate, DateTime? endDate)
+    {
+        var (start, end) = ResolveDateRange(period, startDate, endDate);
+
+        var sales = await context.Sales
+            .Where(s => s.CreatedAt >= start && s.CreatedAt <= end)
+            .OrderByDescending(s => s.CreatedAt)
+            .Select(s => new
+            {
+                s.Id,
+                s.CreatedAt,
+                OperatorName = s.Operator.Name,
+                s.CustomerName,
+                s.PaymentMethod,
+                s.Status,
+                s.Total,
+            })
+            .ToListAsync();
+
+        var sb = new StringBuilder();
+        sb.AppendLine("ID,Data,Operador,Cliente,Forma de Pagamento,Status,Total");
+
+        foreach (var s in sales)
+        {
+            var status = s.Status == SaleStatus.Active ? "Ativa" : "Cancelada";
+            sb.AppendLine(
+                $"{s.Id}," +
+                $"{s.CreatedAt:dd/MM/yyyy HH:mm}," +
+                $"\"{s.OperatorName}\"," +
+                $"\"{s.CustomerName ?? ""}\"," +
+                $"{s.PaymentMethod}," +
+                $"{status}," +
+                $"{s.Total:F2}");
+        }
+
+        return Encoding.UTF8.GetBytes(sb.ToString());
+    }
+
+    public async Task<byte[]> ExportStockCsvAsync()
+    {
+        var products = await context.Products
+            .OrderBy(p => p.Name)
+            .Select(p => new { p.Name, p.Barcode, p.NCM, p.Stock, p.Price, p.IsActive })
+            .ToListAsync();
+
+        var sb = new StringBuilder();
+        sb.AppendLine("Produto,Código de Barras,NCM,Estoque,Preço,Ativo");
+
+        foreach (var p in products)
+        {
+            var ativo = p.IsActive ? "Sim" : "Não";
+            sb.AppendLine(
+                $"\"{p.Name}\"," +
+                $"{p.Barcode ?? ""}," +
+                $"{p.NCM ?? ""}," +
+                $"{p.Stock}," +
+                $"{p.Price:F2}," +
+                $"{ativo}");
+        }
+
+        return Encoding.UTF8.GetBytes(sb.ToString());
+    }
+
+    // ─── Helpers ────────────────────────────────────────────────────────────
+
+    private static (DateTime Start, DateTime End) ResolveDateRange(
+        string? period, DateTime? startDate, DateTime? endDate)
+    {
+        if (period is not null)
+        {
+            var now = DateTime.UtcNow;
+            return period.ToLower() switch
+            {
+                "daily"   => (now.Date, now.Date.AddDays(1).AddTicks(-1)),
+                "weekly"  => (GetMonday(now), GetMonday(now).AddDays(7).AddTicks(-1)),
+                "monthly" => (new DateTime(now.Year, now.Month, 1, 0, 0, 0, DateTimeKind.Utc),
+                              new DateTime(now.Year, now.Month, 1, 0, 0, 0, DateTimeKind.Utc).AddMonths(1).AddTicks(-1)),
+                _ => throw new BusinessException("Parâmetro period inválido. Use: daily, weekly ou monthly.")
+            };
+        }
+
+        if (startDate is null || endDate is null)
+            throw new BusinessException("Informe period ou os parâmetros startDate e endDate.");
+
+        return (startDate.Value.Date, endDate.Value.Date.AddDays(1).AddTicks(-1));
+    }
+
+    private static string ResolvePeriodLabel(string? period, DateTime start, DateTime end) =>
+        period?.ToLower() switch
+        {
+            "daily"   => "Hoje",
+            "weekly"  => "Esta semana",
+            "monthly" => "Este mês",
+            _         => $"{start:dd/MM/yyyy} – {end:dd/MM/yyyy}"
+        };
 
     private static List<SalesChartPoint> FillDays(
         Dictionary<DateTime, (decimal Total, int Count)> data,

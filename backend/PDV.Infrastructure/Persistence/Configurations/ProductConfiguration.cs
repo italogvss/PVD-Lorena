@@ -14,6 +14,7 @@ public class ProductConfiguration : IEntityTypeConfiguration<Product>
         builder.Property(p => p.Barcode).HasMaxLength(50);
         builder.Property(p => p.NCM).HasMaxLength(10);
         builder.Property(p => p.Price).HasColumnType("decimal(10,2)");
+        builder.Property(p => p.PurchasePrice).HasColumnType("decimal(10,2)");
         builder.Property(p => p.IsActive).IsRequired().HasDefaultValue(true);
         builder.Property(p => p.CreatedAt).IsRequired();
 

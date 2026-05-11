@@ -7,6 +7,7 @@ public class Product
     public string? Barcode { get; set; }
     public string? NCM { get; set; }
     public decimal Price { get; set; }
+    public decimal? PurchasePrice { get; set; }
     public int Stock { get; set; }
     public bool IsActive { get; set; } = true;
     public DateTime CreatedAt { get; set; }

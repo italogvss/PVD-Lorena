@@ -4,6 +4,7 @@ import type { User, PaginatedResponse, CreateUserRequest, UpdateUserRequest } fr
 export interface GetUsersParams {
   page: number;
   pageSize: number;
+  search?: string;
 }
 
 const userService = {

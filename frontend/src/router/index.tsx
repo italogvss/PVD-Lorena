@@ -5,7 +5,6 @@ import DashboardPage from '../pages/Dashboard';
 import LoginPage from '../pages/Login';
 import POSPage from '../pages/POS';
 import ReportsPage from '../pages/Reports';
-import SaleDetailPage from '../pages/SaleDetail';
 import SalesPage from '../pages/Sales';
 import StockPage from '../pages/Stock';
 import UsersPage from '../pages/Users';
@@ -25,7 +24,6 @@ const AppRouter: FC = () => (
           <Route path="/dashboard" element={<DashboardPage />} />
           <Route path="/pos"       element={<POSPage />} />
           <Route path="/sales"     element={<SalesPage />} />
-          <Route path="/sales/:id" element={<SaleDetailPage />} />
           <Route path="/stock"     element={<StockPage />} />
           <Route path="/reports"   element={<ReportsPage />} />
 

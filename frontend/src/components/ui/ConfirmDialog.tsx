@@ -3,8 +3,8 @@ import Button from '@mui/material/Button';
 import Dialog from '@mui/material/Dialog';
 import DialogActions from '@mui/material/DialogActions';
 import DialogContent from '@mui/material/DialogContent';
-import DialogContentText from '@mui/material/DialogContentText';
 import DialogTitle from '@mui/material/DialogTitle';
+import Typography from '@mui/material/Typography';
 
 interface ConfirmDialogProps {
   open: boolean;
@@ -23,8 +23,8 @@ const ConfirmDialog: FC<ConfirmDialogProps> = ({
 }) => (
   <Dialog open={open} onClose={onCancel} maxWidth="xs" fullWidth>
     <DialogTitle>{title}</DialogTitle>
-    <DialogContent>
-      <DialogContentText>{message}</DialogContentText>
+    <DialogContent sx={{ pt: 2, pb: 1 }}>
+      <Typography variant="body1" sx={{ lineHeight: 1.65 }}>{message}</Typography>
     </DialogContent>
     <DialogActions>
       <Button onClick={onCancel} disabled={loading}>

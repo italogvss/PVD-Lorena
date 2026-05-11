@@ -52,6 +52,9 @@ namespace PDV.Infrastructure.Migrations
                     b.Property<decimal>("Price")
                         .HasColumnType("decimal(10,2)");
 
+                    b.Property<decimal?>("PurchasePrice")
+                        .HasColumnType("decimal(10,2)");
+
                     b.Property<int>("Stock")
                         .HasColumnType("int");
 

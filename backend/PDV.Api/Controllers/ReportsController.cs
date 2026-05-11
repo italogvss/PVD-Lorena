@@ -9,6 +9,26 @@ namespace PDV.Api.Controllers;
 [Authorize]
 public class ReportsController(IReportService service) : ControllerBase
 {
+    [HttpGet("sales")]
+    public async Task<IActionResult> GetSalesMetrics(
+        [FromQuery] string? period,
+        [FromQuery] DateTime? startDate,
+        [FromQuery] DateTime? endDate)
+    {
+        var result = await service.GetSalesMetricsAsync(period, startDate, endDate);
+        return Ok(result);
+    }
+
+    [HttpGet("sales/by-operator")]
+    public async Task<IActionResult> GetSalesByOperator(
+        [FromQuery] string? period,
+        [FromQuery] DateTime? startDate,
+        [FromQuery] DateTime? endDate)
+    {
+        var result = await service.GetSalesByOperatorAsync(period, startDate, endDate);
+        return Ok(result);
+    }
+
     [HttpGet("sales/chart")]
     public async Task<IActionResult> GetSalesChart(
         [FromQuery] DateTime startDate,
@@ -17,5 +37,29 @@ public class ReportsController(IReportService service) : ControllerBase
     {
         var result = await service.GetSalesChartAsync(startDate, endDate, groupBy);
         return Ok(result);
+    }
+
+    [HttpGet("sales/export")]
+    public async Task<IActionResult> ExportSalesCSV(
+        [FromQuery] string? period,
+        [FromQuery] DateTime? startDate,
+        [FromQuery] DateTime? endDate)
+    {
+        var csv = await service.ExportSalesCsvAsync(period, startDate, endDate);
+        return File(csv, "text/csv", "vendas.csv");
+    }
+
+    [HttpGet("stock")]
+    public async Task<IActionResult> GetStock()
+    {
+        var result = await service.GetStockSnapshotAsync();
+        return Ok(result);
+    }
+
+    [HttpGet("stock/export")]
+    public async Task<IActionResult> ExportStockCSV()
+    {
+        var csv = await service.ExportStockCsvAsync();
+        return File(csv, "text/csv", "estoque.csv");
     }
 }

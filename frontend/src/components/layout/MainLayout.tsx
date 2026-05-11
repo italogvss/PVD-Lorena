@@ -16,10 +16,12 @@ import { useTheme } from '@mui/material/styles';
 import InventoryIcon from '@mui/icons-material/Inventory2';
 import LogoutIcon from '@mui/icons-material/Logout';
 import MenuIcon from '@mui/icons-material/Menu';
+import PaletteIcon from '@mui/icons-material/Palette';
 import PeopleAltIcon from '@mui/icons-material/PeopleAlt';
 import PointOfSaleIcon from '@mui/icons-material/PointOfSale';
 import ReceiptLongIcon from '@mui/icons-material/ReceiptLong';
 import { useAuth } from '../../hooks/useAuth';
+import { useThemeMode } from '../../theme/Theme';
 
 const DRAWER_WIDTH = 260;
 
@@ -40,6 +42,7 @@ const MainLayout: FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, isAdmin, logout } = useAuth();
+  const { themeVariant, toggleThemeVariant } = useThemeMode();
 
   const navItems = isAdmin ? [...NAV_ITEMS, ...ADMIN_ITEMS] : NAV_ITEMS;
 
@@ -61,12 +64,14 @@ const MainLayout: FC = () => {
           display: 'flex',
           justifyContent: 'center',
           alignItems: 'center',
+          gap: 1.5,
           py: 3.5,
           cursor: 'pointer',
         }}
       >
+        <img src="/favicon.png" alt="" style={{ width: 32, height: 32 }} />
         <Typography variant="h4" color="primary" sx={{ fontWeight: 800, letterSpacing: '0.1em' }}>
-          PDV
+          Catavento
         </Typography>
       </Box>
 
@@ -121,9 +126,27 @@ const MainLayout: FC = () => {
         })}
       </List>
 
-      {/* Logout */}
+      {/* Theme + Logout */}
       <Divider sx={{ mt: 'auto' }} />
       <List sx={{ px: 1.5, py: 1 }}>
+        <ListItemButton
+          onClick={toggleThemeVariant}
+          sx={{
+            borderRadius: 2,
+            transition: 'all 0.2s ease',
+            color: 'text.secondary',
+            '&:hover': { bgcolor: 'action.hover', color: 'primary.main', '& .MuiListItemIcon-root': { color: 'primary.main' } },
+          }}
+        >
+          <ListItemIcon sx={{ minWidth: 40, color: 'inherit' }}>
+            <PaletteIcon />
+          </ListItemIcon>
+          <ListItemText
+            primary={themeVariant === 'party' ? 'Tema Padrão' : 'Tema Catavento'}
+            slotProps={{ primary: { variant: 'body2' } }}
+          />
+        </ListItemButton>
+
         <ListItemButton
           onClick={logout}
           sx={{
@@ -173,9 +196,12 @@ const MainLayout: FC = () => {
             >
               <MenuIcon />
             </IconButton>
-            <Typography variant="h6" color="primary" sx={{ fontWeight: 800 }}>
-              PDV
-            </Typography>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <img src="/favicon.png" alt="" style={{ width: 24, height: 24 }} />
+              <Typography variant="h6" color="primary" sx={{ fontWeight: 800 }}>
+                Catavento
+              </Typography>
+            </Box>
           </Toolbar>
         </AppBar>
       )}
