@@ -16,6 +16,7 @@ const NAV_ITEMS = [
 const ADMIN_NAV_ITEMS = [
   ...NAV_ITEMS,
   { label: 'Usuários', value: '/users' },
+  { label: 'Gastos', value: '/expenses' },
   { label: 'Relatórios', value: '/reports' },
 ];
 

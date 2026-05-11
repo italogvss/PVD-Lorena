@@ -133,6 +133,7 @@ export interface SalesChartPoint {
   label: string;
   total: number;
   count: number;
+  cost: number;
 }
 
 export interface StockSnapshot {
@@ -142,4 +143,36 @@ export interface StockSnapshot {
   stock: number;
   price: number;
   isActive: boolean;
+}
+
+export interface Expense {
+  id: string;
+  description: string;
+  amount: number;
+  isRecurring: boolean;
+  dueDate: string;
+  isPaid: boolean;
+  paidAt?: string;
+  createdAt: string;
+}
+
+export interface ExpenseChartPoint {
+  label: string;
+  total: number;
+}
+
+export interface CreateExpenseRequest {
+  description: string;
+  amount: number;
+  isRecurring: boolean;
+  dueDate: string;
+  isPaid: boolean;
+}
+
+export interface UpdateExpenseRequest {
+  description: string;
+  amount: number;
+  isRecurring: boolean;
+  dueDate: string;
+  isPaid: boolean;
 }

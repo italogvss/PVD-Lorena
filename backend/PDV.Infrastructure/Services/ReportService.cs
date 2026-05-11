@@ -20,30 +20,38 @@ public class ReportService(AppDbContext context) : IReportService
             .Where(s => s.Status == SaleStatus.Active
                      && s.CreatedAt >= start
                      && s.CreatedAt <= end)
-            .Select(s => new { s.CreatedAt, s.Total })
+            .Select(s => new
+            {
+                s.CreatedAt,
+                s.Total,
+                Cost = s.Items.Sum(i =>
+                    i.PurchasePriceSnapshot.HasValue
+                        ? i.PurchasePriceSnapshot.Value * i.Quantity
+                        : 0m)
+            })
             .ToListAsync();
 
         return groupBy.ToLower() switch
         {
             "day" => FillDays(
                 sales.GroupBy(s => s.CreatedAt.Date)
-                     .ToDictionary(g => g.Key, g => (g.Sum(s => s.Total), g.Count())),
+                     .ToDictionary(g => g.Key, g => (g.Sum(s => s.Total), g.Count(), g.Sum(s => s.Cost))),
                 startDate.Date, endDate.Date),
 
             "week" => FillWeeks(
                 sales.GroupBy(s => GetMonday(s.CreatedAt))
-                     .ToDictionary(g => g.Key, g => (g.Sum(s => s.Total), g.Count())),
+                     .ToDictionary(g => g.Key, g => (g.Sum(s => s.Total), g.Count(), g.Sum(s => s.Cost))),
                 GetMonday(startDate), GetMonday(endDate)),
 
             "month" => FillMonths(
                 sales.GroupBy(s => new DateTime(s.CreatedAt.Year, s.CreatedAt.Month, 1))
-                     .ToDictionary(g => g.Key, g => (g.Sum(s => s.Total), g.Count())),
+                     .ToDictionary(g => g.Key, g => (g.Sum(s => s.Total), g.Count(), g.Sum(s => s.Cost))),
                 new DateTime(startDate.Year, startDate.Month, 1),
                 new DateTime(endDate.Year, endDate.Month, 1)),
 
             "year" => FillYears(
                 sales.GroupBy(s => s.CreatedAt.Year)
-                     .ToDictionary(g => g.Key, g => (g.Sum(s => s.Total), g.Count())),
+                     .ToDictionary(g => g.Key, g => (g.Sum(s => s.Total), g.Count(), g.Sum(s => s.Cost))),
                 startDate.Year, endDate.Year),
 
             _ => throw new BusinessException("Parâmetro groupBy inválido. Use: day, week, month ou year.")
@@ -205,33 +213,33 @@ public class ReportService(AppDbContext context) : IReportService
         };
 
     private static List<SalesChartPoint> FillDays(
-        Dictionary<DateTime, (decimal Total, int Count)> data,
+        Dictionary<DateTime, (decimal Total, int Count, decimal Cost)> data,
         DateTime start, DateTime end)
     {
         var result = new List<SalesChartPoint>();
         for (var d = start; d <= end; d = d.AddDays(1))
         {
             var v = data.GetValueOrDefault(d);
-            result.Add(new(d.ToString("dd/MM/yy"), v.Total, v.Count));
+            result.Add(new(d.ToString("dd/MM/yy"), v.Total, v.Count, v.Cost));
         }
         return result;
     }
 
     private static List<SalesChartPoint> FillWeeks(
-        Dictionary<DateTime, (decimal Total, int Count)> data,
+        Dictionary<DateTime, (decimal Total, int Count, decimal Cost)> data,
         DateTime start, DateTime end)
     {
         var result = new List<SalesChartPoint>();
         for (var d = start; d <= end; d = d.AddDays(7))
         {
             var v = data.GetValueOrDefault(d);
-            result.Add(new(d.ToString("dd/MM/yy"), v.Total, v.Count));
+            result.Add(new(d.ToString("dd/MM/yy"), v.Total, v.Count, v.Cost));
         }
         return result;
     }
 
     private static List<SalesChartPoint> FillMonths(
-        Dictionary<DateTime, (decimal Total, int Count)> data,
+        Dictionary<DateTime, (decimal Total, int Count, decimal Cost)> data,
         DateTime start, DateTime end)
     {
         var months = new[] {
@@ -242,19 +250,19 @@ public class ReportService(AppDbContext context) : IReportService
         for (var d = start; d <= end; d = d.AddMonths(1))
         {
             var v = data.GetValueOrDefault(d);
-            result.Add(new($"{months[d.Month - 1]}/{d.Year}", v.Total, v.Count));
+            result.Add(new($"{months[d.Month - 1]}/{d.Year}", v.Total, v.Count, v.Cost));
         }
         return result;
     }
 
     private static List<SalesChartPoint> FillYears(
-        Dictionary<int, (decimal Total, int Count)> data,
+        Dictionary<int, (decimal Total, int Count, decimal Cost)> data,
         int start, int end)
     {
         return Enumerable.Range(start, end - start + 1)
             .Select(y => {
                 var v = data.GetValueOrDefault(y);
-                return new SalesChartPoint(y.ToString(), v.Total, v.Count);
+                return new SalesChartPoint(y.ToString(), v.Total, v.Count, v.Cost);
             })
             .ToList();
     }

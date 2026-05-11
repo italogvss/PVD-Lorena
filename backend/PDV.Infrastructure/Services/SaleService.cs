@@ -91,6 +91,7 @@ public class SaleService(
                 ProductId = item.ProductId,
                 ProductName = product.Name,
                 UnitPrice = product.Price,
+                PurchasePriceSnapshot = product.PurchasePrice,
                 Quantity = item.Quantity,
                 Subtotal = product.Price * item.Quantity
             };
@@ -170,7 +171,7 @@ public class SaleService(
             s.Total, s.Status.ToString(), s.CancelledById, s.CancelledAt, s.CreatedAt,
             s.Items.Select(i => new SaleItemResponse(
                 i.Id, i.SaleId, i.ProductId,
-                i.ProductName, i.UnitPrice, i.Quantity, i.Subtotal)).ToList(),
+                i.ProductName, i.UnitPrice, i.PurchasePriceSnapshot, i.Quantity, i.Subtotal)).ToList(),
             s.AmountPaid,
             s.AmountPaid - s.Total);
 }

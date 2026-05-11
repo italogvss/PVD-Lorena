@@ -13,6 +13,7 @@ import Select from '@mui/material/Select';
 import TextField from '@mui/material/TextField';
 import ToggleButton from '@mui/material/ToggleButton';
 import ToggleButtonGroup from '@mui/material/ToggleButtonGroup';
+import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -20,6 +21,8 @@ import RemoveIcon from '@mui/icons-material/Remove';
 import PersonIcon from '@mui/icons-material/Person';
 import SearchIcon from '@mui/icons-material/Search';
 import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';
+import ConfirmDialog from '../../components/ui/ConfirmDialog';
+import ProductFormModal from '../../components/ui/ProductFormModal';
 import { useAuth } from '../../hooks/useAuth';
 import { useProduct } from '../../hooks/useProduct';
 import { useSale } from '../../hooks/useSale';
@@ -61,6 +64,10 @@ const POSPage: FC = () => {
   const [searchInput, setSearchInput] = useState('');
   const [searchOptions, setSearchOptions] = useState<Product[]>([]);
 
+  const [noStockProduct, setNoStockProduct] = useState<Product | null>(null);
+  const [productFormOpen, setProductFormOpen] = useState(false);
+  const [productToEdit, setProductToEdit] = useState<Product | null>(null);
+
   const isInstallment = paymentMethod === 'Credit Card';
   const isCash = paymentMethod === 'Cash';
 
@@ -99,7 +106,7 @@ const POSPage: FC = () => {
       return;
     }
     if (!existing && product.stock < 1) {
-      showToast(`"${product.name}" está sem estoque.`, 'error');
+      setNoStockProduct(product);
       return;
     }
 
@@ -182,6 +189,7 @@ const POSPage: FC = () => {
   const isSubmitting = saleLoading === 'create';
 
   return (
+    <>
     <Box
       sx={{
         height: { xs: 'auto', md: 'calc(100vh - 48px)' },
@@ -209,56 +217,76 @@ const POSPage: FC = () => {
           <Typography variant="h6" sx={{ fontWeight: 700, mb: 1.5, letterSpacing: '0.02em' }}>
             Buscar Produto
           </Typography>
-          <Autocomplete
-            options={searchOptions}
-            getOptionLabel={(option) => option.name}
-            inputValue={searchInput}
-            onInputChange={(_, value) => setSearchInput(value)}
-            onChange={(_, value) => addToCart(value)}
-            value={null}
-            clearOnEscape
-            blurOnSelect
-            filterOptions={(x) => x}
-            noOptionsText={
-              searchInput.trim().length === 0
-                ? 'Digite para buscar...'
-                : 'Nenhum produto encontrado'
-            }
-            loading={productLoading === 'fetch'}
-            renderInput={(params) => (
-              <TextField
-                {...params}
-                placeholder="Digite o nome ou código do produto..."
-                slotProps={{
-                  ...params.slotProps,
-                  input: {
-                    ...(params.slotProps?.input as object),
-                    startAdornment: (
-                      <SearchIcon sx={{ color: 'text.secondary', ml: 1, mr: 0.5, fontSize: 22 }} />
-                    ),
-                    endAdornment: productLoading === 'fetch'
-                      ? <CircularProgress size={18} />
-                      : (params.slotProps?.input as { endAdornment?: React.ReactNode })?.endAdornment,
-                  },
-                }}
-              />
-            )}
-            renderOption={(props, option) => (
-              <Box component="li" {...props} key={option.id}>
-                <Box sx={{ flexGrow: 1 }}>
-                  <Typography variant="body1" sx={{ fontWeight: 600 }}>
-                    {option.name}
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    Estoque: {option.stock} unid.
+          <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+            <Autocomplete
+              sx={{ flex: 1 }}
+              options={searchOptions}
+              getOptionLabel={(option) => option.name}
+              inputValue={searchInput}
+              onInputChange={(_, value) => setSearchInput(value)}
+              onChange={(_, value) => addToCart(value)}
+              value={null}
+              clearOnEscape
+              blurOnSelect
+              filterOptions={(x) => x}
+              noOptionsText={
+                searchInput.trim().length === 0
+                  ? 'Digite para buscar...'
+                  : 'Nenhum produto encontrado'
+              }
+              loading={productLoading === 'fetch'}
+              renderInput={(params) => (
+                <TextField
+                  {...params}
+                  placeholder="Digite o nome ou código do produto..."
+                  slotProps={{
+                    ...params.slotProps,
+                    input: {
+                      ...(params.slotProps?.input as object),
+                      startAdornment: (
+                        <SearchIcon sx={{ color: 'text.secondary', ml: 1, mr: 0.5, fontSize: 22 }} />
+                      ),
+                      endAdornment: productLoading === 'fetch'
+                        ? <CircularProgress size={18} />
+                        : (params.slotProps?.input as { endAdornment?: React.ReactNode })?.endAdornment,
+                    },
+                  }}
+                />
+              )}
+              renderOption={(props, option) => (
+                <Box component="li" {...props} key={option.id}>
+                  <Box sx={{ flexGrow: 1 }}>
+                    <Typography variant="body1" sx={{ fontWeight: 600 }}>
+                      {option.name}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      Estoque: {option.stock} unid.
+                    </Typography>
+                  </Box>
+                  <Typography variant="body1" color="primary" sx={{ fontWeight: 700, ml: 2 }}>
+                    {formatBRL(option.price)}
                   </Typography>
                 </Box>
-                <Typography variant="body1" color="primary" sx={{ fontWeight: 700, ml: 2 }}>
-                  {formatBRL(option.price)}
-                </Typography>
-              </Box>
-            )}
-          />
+              )}
+            />
+            <Tooltip title="Adicionar novo produto">
+              <IconButton
+                onClick={() => {
+                  setProductToEdit(null);
+                  setProductFormOpen(true);
+                }}
+                color="primary"
+                sx={{
+                  border: '1px solid',
+                  borderColor: 'primary.main',
+                  borderRadius: 1.5,
+                  flexShrink: 0,
+                }}
+              >
+                <AddIcon />
+              </IconButton>
+            </Tooltip>
+          </Box>
         </Box>
 
         <Divider />
@@ -621,6 +649,36 @@ const POSPage: FC = () => {
         </Box>
       </Box>
     </Box>
+
+      {/* ── Sem estoque: dialog de confirmação de edição ─────────── */}
+      <ConfirmDialog
+        open={!!noStockProduct}
+        title="Produto sem estoque"
+        message={`"${noStockProduct?.name}" está sem estoque. Deseja editar o produto para ajustar o estoque?`}
+        confirmLabel="Sim, editar"
+        onConfirm={() => {
+          setProductToEdit(noStockProduct);
+          setProductFormOpen(true);
+          setNoStockProduct(null);
+        }}
+        onCancel={() => setNoStockProduct(null)}
+      />
+
+      {/* ── Modal de produto (criar / editar) ────────────────────── */}
+      <ProductFormModal
+        open={productFormOpen}
+        onClose={() => {
+          setProductFormOpen(false);
+          setProductToEdit(null);
+        }}
+        onSuccess={() => {
+          setProductFormOpen(false);
+          setProductToEdit(null);
+          fetchProducts(searchInput);
+        }}
+        product={productToEdit ?? undefined}
+      />
+    </>
   );
 };
 

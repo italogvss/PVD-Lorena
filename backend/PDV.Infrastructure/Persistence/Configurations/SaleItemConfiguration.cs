@@ -12,6 +12,7 @@ public class SaleItemConfiguration : IEntityTypeConfiguration<SaleItem>
 
         builder.Property(i => i.ProductName).IsRequired().HasMaxLength(200);
         builder.Property(i => i.UnitPrice).HasColumnType("decimal(10,2)");
+        builder.Property(i => i.PurchasePriceSnapshot).HasColumnType("decimal(10,2)");
         builder.Property(i => i.Subtotal).HasColumnType("decimal(10,2)");
         builder.Property(i => i.SaleId).IsRequired();
 

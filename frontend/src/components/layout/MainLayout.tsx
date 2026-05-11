@@ -13,6 +13,8 @@ import Toolbar from '@mui/material/Toolbar';
 import Typography from '@mui/material/Typography';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import { useTheme } from '@mui/material/styles';
+import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet';
+import BarChartIcon from '@mui/icons-material/BarChart';
 import InventoryIcon from '@mui/icons-material/Inventory2';
 import LogoutIcon from '@mui/icons-material/Logout';
 import MenuIcon from '@mui/icons-material/Menu';
@@ -29,10 +31,12 @@ const NAV_ITEMS = [
   { label: 'Realizar Venda', path: '/pos',   icon: <PointOfSaleIcon /> },
   { label: 'Estoque',        path: '/stock',  icon: <InventoryIcon /> },
   { label: 'Histórico de Vendas', path: '/sales', icon: <ReceiptLongIcon /> },
+  { label: 'Relatórios',     path: '/reports', icon: <BarChartIcon /> },
 ];
 
 const ADMIN_ITEMS = [
   { label: 'Usuários', path: '/users', icon: <PeopleAltIcon /> },
+  { label: 'Gastos', path: '/expenses', icon: <AccountBalanceWalletIcon /> },
 ];
 
 const MainLayout: FC = () => {

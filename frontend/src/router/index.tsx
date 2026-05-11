@@ -2,6 +2,7 @@ import { FC } from 'react';
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import MainLayout from '../components/layout/MainLayout';
 import DashboardPage from '../pages/Dashboard';
+import ExpensesPage from '../pages/Expenses';
 import LoginPage from '../pages/Login';
 import POSPage from '../pages/POS';
 import ReportsPage from '../pages/Reports';
@@ -30,6 +31,7 @@ const AppRouter: FC = () => (
           {/* Admin only */}
           <Route element={<AdminRoute />}>
             <Route path="/users" element={<UsersPage />} />
+            <Route path="/expenses" element={<ExpensesPage />} />
           </Route>
         </Route>
       </Route>

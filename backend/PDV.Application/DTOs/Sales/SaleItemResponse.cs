@@ -6,5 +6,6 @@ public record SaleItemResponse(
     Guid? ProductId,
     string ProductName,
     decimal UnitPrice,
+    decimal? PurchasePriceSnapshot,
     int Quantity,
     decimal Subtotal);
