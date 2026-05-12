@@ -8,6 +8,7 @@
 .env
 .env.local
 .env.*.local
+.env.prod
 
 # --------------------------
 # MCP settings — contains local credentials

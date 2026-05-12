@@ -100,8 +100,9 @@ using (var scope = app.Services.CreateScope())
         {
             Id = Guid.NewGuid(),
             Name = "Administrador",
-            Username = "admin",
-            PasswordHash = BCrypt.Net.BCrypt.HashPassword("admin"),
+            Username = "lorenagavassi",
+            PasswordHash = BCrypt.Net.BCrypt.HashPassword(
+                builder.Configuration["ADMIN_PASSWORD"] ?? "catavento2026"),
             Role = UserRole.Admin,
             CreatedAt = DateTime.UtcNow
         });
@@ -113,11 +114,6 @@ if (app.Environment.IsDevelopment())
     app.MapOpenApi();
     app.MapScalarApiReference(); // abre em /scalar/v1
 }
-if (app.Environment.IsDevelopment())
-    app.MapOpenApi();
-
-if (!app.Environment.IsDevelopment())
-    app.UseHttpsRedirection();
 
 app.UseCors("Frontend");
 app.UseAuthentication();
